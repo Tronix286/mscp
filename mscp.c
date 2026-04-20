@@ -16,7 +16,7 @@
  |    See file COPYING or http://bitpit.net/mscp/ for details.          |
  +----------------------------------------------------------------------*/
 
-char mscp_c_rcsid[] = "@(#)$Id: mscp.c,v 1.18 2003/12/14 15:12:12 marcelk Exp $";
+//char mscp_c_rcsid[] = "@(#)$Id: mscp.c,v 1.18 2003/12/14 15:12:12 marcelk Exp $";
 
 #include <ctype.h>
 #include <errno.h>
@@ -26,6 +26,7 @@ char mscp_c_rcsid[] = "@(#)$Id: mscp.c,v 1.18 2003/12/14 15:12:12 marcelk Exp $"
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
+#include <stdint.h>
 
 typedef unsigned char byte;
 #define INF 32000
@@ -111,7 +112,7 @@ static unsigned long zobrist[12][64];   /* Hash-key construction */
  *  so I don't want to waste space on a large table. This also makes MSCP
  *  fit well on 8bit machines.
  */
-#define CORE (64)
+#define CORE (128)
 //static long booksize;                   /* Number of opening book entries */
 static int booksize;
 
@@ -130,6 +131,7 @@ static union {
                 uint16_t count;         /* - Frequency */
         } bk[CORE];
 } core;
+
 
 #if 0
 static union {
@@ -1214,6 +1216,7 @@ static int parse_move(char *line, int *num)
  |      opening book                                                    |
  +----------------------------------------------------------------------*/
 
+#ifndef LOAD_BOOK_BIN
 static int cmp_bk(const void *ap, const void *bp)
 {
         const struct bk *a = ap;
@@ -1245,7 +1248,7 @@ static void compact_book(void)
 #endif
         booksize = c;
 }
-
+#endif
 
 #if SAVE_BOOK_BIN
 static void prune_book(int maxbooksize)
@@ -1281,28 +1284,33 @@ static void load_book(char *filename)
 #ifdef LOAD_BOOK_BIN
 	fp = fopen("book.bin", "rb");
 	if (fp) {
+		rewind(fp);
 		booksize = fread(&core, sizeof(struct bk), CORE, fp);
 		fclose(fp);
 		if (booksize > 0) {
 			printf("Loading opening book of size %d from 'book.bin'\n", booksize);
 			return;
+		} else
+		{
+			printf("Error loading book.bin\n");
 		}
+	} else
+	{
+		printf("File not found: book.bin\n");
+		return;
 	}
-#endif
+#else
         fp = fopen(filename, "r");
         if (!fp) {
                 printf("no opening book: %s\n", filename);
-#if NO_MERCY
-                exit(EXIT_FAILURE);     /* no mercy */
-#endif
 		return;
         }
         while (readline(line, sizeof(line), fp) >= 0) {
-#if SAVE_BOOK_BIN
+		#if SAVE_BOOK_BIN
                 int weight = 16;
-#else
+		#else
                 const int weight = 1;
-#endif
+		#endif
                 s = line;
                 for (;;) {
                         move = parse_move(s, &num);
@@ -1317,25 +1325,26 @@ static void load_book(char *filename)
                                 if (booksize >= CORE) compact_book();
                         }
                         make_move(move);
-#if SAVE_BOOK_BIN
+			#if SAVE_BOOK_BIN
                         if (weight > 1)
                                 weight--;
-#endif
+			#endif
                 }
                 while (ply>0) unmake_move(); /* @@@ wrong */
         }
         fclose(fp);
         compact_book();
-#ifdef SAVE_BOOK_BIN
-# ifdef MAXBOOKSIZE
+	#ifdef SAVE_BOOK_BIN
+	# ifdef MAXBOOKSIZE
         prune_book(MAXBOOKSIZE);
-# endif
+	# endif
         printf("Dumping binary book into book.bin\n");
 	fp = fopen("book.bin","wb");
 	fwrite(&core, sizeof(struct bk), booksize, fp);
 	fclose(fp);
         exit(0);
-#endif
+	#endif
+#endif //else LOAD_BOOK_BIN
 }
 
 
@@ -1955,13 +1964,25 @@ static void cmd_set_depth(char *s)
         printf("maximum search depth is %d plies\n", maxdepth);
 }
 
+uint8_t get_r_register(void) __z88dk_fastcall {
+    #asm
+        ld a, r
+	mov h,a
+	mvi l,0
+//        ld h, a  ; Store A (containing R) into the C variable
+//	ld l,0
+    #endasm
+}
+
 static void cmd_new(char *dummy)
 {
         setup_board("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -");
         load_book("book.txt");
         computer[0] = 0;
         computer[1] = 1;
-        rnd_seed = time(NULL);
+        //rnd_seed = TIME(NULL);
+        rnd_seed = get_r_register();
+	//printf("rnd_seed = %lx\n",rnd_seed);
 }
 
 static void cmd_xboard(char *dummy)
@@ -2019,10 +2040,10 @@ struct command mscp_commands[] = {
  |      main                                                            |
  +----------------------------------------------------------------------*/
 
-static void catch_sigint(int s)
-{
+//static void catch_sigint(int s)
+//{
         //signal(s, catch_sigint);
-}
+//}
 
 static char startup_message[] =
         "\n"
@@ -2095,7 +2116,7 @@ int main(void)
                 mscp_commands[cmd].cmd(line);
 
                 while (computer[!WTM]) {
-			if (getk()) break;	//tronix
+			//if (getk()) break;	//tronix
                         move = book_move();
                         if (!move) {
                                 booksize = 0;
