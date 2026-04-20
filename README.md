@@ -1,5 +1,5 @@
 # MSCP - Marcel's Simple Chess Program
-MSCP, Marcel's Simple Chess Program by Marcel van Kervinck, is a small, simple, yet complete open source chess engine released under the GNU GPL. This version has been adapted to work on the Gigatron which is another brainchild of Marcel.
+MSCP, Marcel's Simple Chess Program by Marcel van Kervinck, is a small, simple, yet complete open source chess engine released under the GNU GPL. This version has been adapted to work on CP/M v2.x Z80 based computers.
 
 https://www.chessprogramming.org/MSCP
 
