@@ -10,6 +10,7 @@ https://www.chessprogramming.org/MSCP
 - Search depth set 2 by default (was 4);
 - New "log" command added - logging moves to MSCP.PGN file;
 - Something else;
+<img width="869" height="581" alt="image" src="https://github.com/user-attachments/assets/8ff00dff-a703-4d02-91d0-0a8ffce72812" />
 
 ## Useful links
 
