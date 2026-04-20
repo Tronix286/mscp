@@ -40,6 +40,9 @@ typedef unsigned char byte;
  |      data structures                                                 |
  +----------------------------------------------------------------------*/
 
+FILE *fp_log;
+byte logfile = 0;
+
 enum {                  /* 64 squares */
         A1, A2, A3, A4, A5, A6, A7, A8,
         B1, B2, B3, B4, B5, B6, B7, B8,
@@ -266,16 +269,22 @@ static long rnd(void)
  |      I/O functions                                                   |
  +----------------------------------------------------------------------*/
 
-static void print_square(int square)
+static void print_square(int square,byte f_log)
 {
-        putchar(FILE2CHAR(F(square)));
-        putchar(RANK2CHAR(R(square)));
+	FILE * fp;
+
+	if (f_log)
+		fp = fp_log;
+	else
+		fp = stdout;
+        putc(FILE2CHAR(F(square)),fp);
+        putc(RANK2CHAR(R(square)),fp);
 }
 
 static void print_move_long(int move)
 {
-        print_square(FR(move));
-        print_square(TO(move));
+        print_square(FR(move),0);
+        print_square(TO(move),0);
         if (move >= SPECIAL) {
                 if ((board[FR(move)] == WHITE_PAWN && R(TO(move)) == RANK_8)
                 ||  (board[FR(move)] == BLACK_PAWN && R(TO(move)) == RANK_1)) {
@@ -304,7 +313,7 @@ static void print_board(void)
                 board[CASTLE] & CASTLE_BLACK_KING ? "k" : "",
                 board[CASTLE] & CASTLE_BLACK_QUEEN ? "q" : ""
         );
-        if (board[EP]) print_square(board[EP]);
+        if (board[EP]) print_square(board[EP],0);
         putchar('\n');
 }
 
@@ -955,21 +964,27 @@ static void generate_moves(unsigned treshold)
         }
 }
 
-static void print_move_san(int move)
+static void print_move_san(int move,byte f_log)
 {
         int fr, to;
         int filex = 0, rankx = 0;
         struct move *moves;
+	FILE * fp;
 
+	if (f_log)
+		fp = fp_log;
+	else
+		fp = stdout;
+	
         fr = FR(move);
         to = TO(move);
 
         if ((move==(MOVE(E1,C1)|SPECIAL)) || (move==(MOVE(E8,C8)|SPECIAL))) {
-                fputs("O-O-O", stdout);
+                fputs("O-O-O", fp);
                 goto check;
         }
         if ((move==(MOVE(E1,G1)|SPECIAL)) || (move==(MOVE(E8,G8)|SPECIAL))) {
-                fputs("O-O", stdout);
+                fputs("O-O", fp);
                 goto check;
         }
 
@@ -978,16 +993,16 @@ static void print_move_san(int move)
                  *  pawn moves are a bit special
                  */
                 if (F(fr) != F(to)) {
-                        printf("%cx", FILE2CHAR(F(fr)));
+                        fprintf(fp,"%cx", FILE2CHAR(F(fr)));
                 }
-                print_square(to);
+                print_square(to,f_log);
                 /*
                  *  promote to piece (=Q, =R, =B, =N)
                  */
                 if (move > 4095
                 && (R(to)==RANK_1 || R(to)==RANK_8)) {
-                        putchar('=');
-                        putchar("QRBN"[move>>13]);
+                        putc('=',fp);
+                        putc("QRBN"[move>>13],fp);
                 }
                 goto check;
         }
@@ -995,7 +1010,7 @@ static void print_move_san(int move)
         /*
          *  piece identifier (K, Q, R, B, N)
          */
-        putchar(toupper(PIECE2CHAR(board[fr])));
+        putc(toupper(PIECE2CHAR(board[fr])),fp);
 
         /*
          *  disambiguate: consider moves of identical pieces to the same square
@@ -1013,18 +1028,18 @@ static void print_move_san(int move)
                 rankx |= (R(fr) == R(FR(move_sp->move))) + 1;
                 filex |=  F(fr) == F(FR(move_sp->move));
         }
-        if (rankx != filex) putchar(FILE2CHAR(F(fr)));
-        if (filex) putchar(RANK2CHAR(R(fr)));
+        if (rankx != filex) putc(FILE2CHAR(F(fr)),fp);
+        if (filex) putc(RANK2CHAR(R(fr)),fp);
 
         /*
          *  capture sign
          */
-        if (board[to] != EMPTY) putchar('x');
+        if (board[to] != EMPTY) putc('x',fp);
 
         /*
          *  to-square
          */
-        print_square(to);
+        print_square(to,f_log);
 
         /*
          *  check ('+') or checkmate ('#')
@@ -1043,7 +1058,7 @@ check:
                                 move_sp = moves;        /* break */
                         }
                 }
-                putchar(sign);
+                putc(sign,fp);
         }
         unmake_move();
 }
@@ -1365,7 +1380,7 @@ static int book_move(void)
         while (BOOK[x].hash == hash) {
                 printf("%s (%d)", seperator, BOOK[x].count);
                 seperator = ",";
-                print_move_san(BOOK[x].move);
+                print_move_san(BOOK[x].move,0);
                 compute_hash();
 
                 sum += BOOK[x].count;
@@ -1834,7 +1849,7 @@ static int root_search(int maxdepth)
                 }
 
                 printf(" %5lu %3d %+1.2f ", nodes, depth, best_score / 100.0);
-                print_move_san(move);
+                print_move_san(move,0);
                 puts("");
 
                 /* sort remaining moves in descending order of subtree size */
@@ -1850,6 +1865,20 @@ static int root_search(int maxdepth)
  |      commands                                                        |
  +----------------------------------------------------------------------*/
 
+static void cmd_log(char *dummy /* @unused */)
+{
+	logfile ^= 1;
+	printf("LOG %s\n",logfile ? "ON" : "OFF");
+	if (logfile) {
+		fp_log = fopen("mscp.pgn","w");
+		rewind(fp_log);
+		fprintf(fp_log,"[started]\r\n");
+	} else
+	{
+		fclose(fp_log);
+	}
+}
+
 static void cmd_bd(char *dummy /* @unused */)
 {
         print_board();
@@ -1863,7 +1892,7 @@ static void cmd_book(char *dummy)
 
         move = book_move();
         if (move) {
-                print_move_san(move);
+                print_move_san(move,0);
                 puts(" selected");
         }
 }
@@ -1883,7 +1912,7 @@ static void cmd_list_moves(char *dummy)
         while (move_sp > m) {
                 --move_sp;
                 if (test_illegal(move_sp->move)) continue;
-                print_move_san(move_sp->move);
+                print_move_san(move_sp->move,0);
                 putchar('\n');
                 nmoves++;
         }
@@ -1896,6 +1925,12 @@ static void cmd_default(char *s)
 
         move = parse_move(s, &dummy);
         if (move) {
+		if (logfile)
+		{
+			fprintf(fp_log,"%d.",1+ply);
+			print_move_san(move,1);
+			fputs("\r\n",fp_log);
+		}
                 make_move(move);
                 hash_stack[ply] = compute_hash();
                 print_board();
@@ -1964,15 +1999,18 @@ static void cmd_set_depth(char *s)
         printf("maximum search depth is %d plies\n", maxdepth);
 }
 
-uint8_t get_r_register(void) __z88dk_fastcall {
+
+uint32_t get_r_register(void) __z88dk_fastcall {
     #asm
         ld a, r
 	mov h,a
-	mvi l,0
-//        ld h, a  ; Store A (containing R) into the C variable
-//	ld l,0
+	mov l,a
+        ld a, r
+	mov d,a
+	mov e,a
     #endasm
 }
+
 
 static void cmd_new(char *dummy)
 {
@@ -1980,9 +2018,13 @@ static void cmd_new(char *dummy)
         load_book("book.txt");
         computer[0] = 0;
         computer[1] = 1;
-        //rnd_seed = TIME(NULL);
+        //rnd_seed = time(NULL);
         rnd_seed = get_r_register();
-	//printf("rnd_seed = %lx\n",rnd_seed);
+	printf("rnd_seed = %lx\n",rnd_seed);
+	if (logfile) {
+		cmd_log(NULL);
+		cmd_log(NULL);
+	}
 }
 
 static void cmd_xboard(char *dummy)
@@ -1998,6 +2040,7 @@ static void cmd_fen(char *s)
 
 static void cmd_quit(char *dummy)
 {
+	if (fp_log) fclose(fp_log);
         exit(0);
 }
 
@@ -2017,6 +2060,7 @@ static void cmd_help(char *dummy)
 
 struct command mscp_commands[] = {
  { "help",      cmd_help,       "show this list of commands"            },
+ { "log",       cmd_log, 	"logging moves to MSCP.PGN"             },
  { "bd",        cmd_bd,         "display board"                         },
  { "ls",        cmd_list_moves, "list moves"                            },
  { "new",       cmd_new,        "new game"                              },
@@ -2116,7 +2160,7 @@ int main(void)
                 mscp_commands[cmd].cmd(line);
 
                 while (computer[!WTM]) {
-			//if (getk()) break;	//tronix
+			if (getk()) break;	//tronix
                         move = book_move();
                         if (!move) {
                                 booksize = 0;
@@ -2133,10 +2177,16 @@ int main(void)
                                         puts("1/2-1/2");
                                 }
                                 computer[0] = computer[1] = 0;
+				if (logfile) fclose(fp_log);
                                 break;
                         }
                         printf("%d. ... ", 1+ply/2);
                         print_move_long(move);
+			if (logfile) {
+				fprintf(fp_log,"%d.",1+ply);
+				print_move_san(move,1);
+				fputs("\r\n",fp_log);
+			}
                         putc('\n', stdout);
 
                         make_move(move);
