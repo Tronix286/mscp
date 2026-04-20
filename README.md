@@ -12,6 +12,9 @@ https://www.chessprogramming.org/MSCP
 - Something else;
 <img width="869" height="581" alt="image" src="https://github.com/user-attachments/assets/8ff00dff-a703-4d02-91d0-0a8ffce72812" />
 
+## Installing
+Just copy MSCP.COM and BOOK.BIN to your CP/M disk
+
 ## Useful commands
 `both` - computer plays both sides (computer starts playing with itself)</br>
 `sd` - search depth. By default it sets to 2, but you can try `sd 3` if your Z80 running at 20+ MHz</br>
