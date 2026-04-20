@@ -13,7 +13,7 @@ https://www.chessprogramming.org/MSCP
 <img width="869" height="581" alt="image" src="https://github.com/user-attachments/assets/8ff00dff-a703-4d02-91d0-0a8ffce72812" />
 
 ## Installing
-Just copy MSCP.COM and BOOK.BIN to your CP/M disk
+Just copy **MSCP.COM** and **BOOK.BIN** to your CP/M disk
 
 ## Useful commands
 `both` - computer plays both sides (computer starts playing with itself)</br>
