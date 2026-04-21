@@ -1,3 +1,3 @@
 rem zcc +cpm -pragma-define:CRT_ENABLE_COMMANDLINE=0 -pragma-define:CRT_COMMANDLINE_REDIRECTION=0 -pragma-define:CRT_OPEN_MAX=1 -DLOAD_BOOK_BIN -lmath48 --list -m -O3 mscp.c -o mscp.com
-rem zcc +cpm -pragma-define:CRT_ENABLE_COMMANDLINE=0 -pragma-define:CRT_COMMANDLINE_REDIRECTION=0 -pragma-define:CRT_OPEN_MAX=1 -DLOAD_BOOK_BIN --list -m mscp.c -o mscp.com
-zcc +cpm -compiler=sdcc -pragma-define:CRT_ENABLE_COMMANDLINE=0 -pragma-define:CRT_COMMANDLINE_REDIRECTION=0 -pragma-define:CRT_OPEN_MAX=1 -DLOAD_BOOK_BIN -Cs"--disable-warning 85" --list -m -O3 mscp.c -o mscp.com
+zcc +cpm -pragma-define:CRT_ENABLE_COMMANDLINE=0 -pragma-define:CRT_COMMANDLINE_REDIRECTION=0 -pragma-define:CRT_OPEN_MAX=1 -DLOAD_BOOK_BIN --list -m mscp.c -o mscp.com
+rem zcc +cpm -compiler=sdcc -pragma-define:CRT_ENABLE_COMMANDLINE=0 -pragma-define:CRT_COMMANDLINE_REDIRECTION=0 -pragma-define:CRT_OPEN_MAX=1 -DLOAD_BOOK_BIN -Cs"--disable-warning 85" --list -m -O3 mscp.c -o mscp.com
