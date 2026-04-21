@@ -104,7 +104,7 @@ struct move {
         unsigned short prescore;
 };
 
-static struct move move_stack[512], *move_sp; /* History of moves */
+static struct move move_stack[1024], *move_sp; /* History of moves */
 
 //static int piece_square_m[12][64];      /* Position evaluation tables */
 //static int *piece_square[12];           /* Pointers saves a multiplication by 128 */
