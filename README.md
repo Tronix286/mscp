@@ -20,7 +20,7 @@ Just copy **MSCP.COM** and **BOOK.BIN** to your CP/M disk
 `sd` - search depth. By default it sets to 2, but you can try `sd 3` if your Z80 running at 20+ MHz</br>
 `log` - start logging moves to MSCP.PGN file. This text file which can be loaded into WinBoard/XBoard for view game</br>
 `new` - start new game. Clear all history moves, reload BOOK.BIN, reinit rnd_seed and rewrite MSCP.PGN if log enabled</br>
-'help' - you know what to do
+`help` - you know what to do
 
 ## Useful links
 
