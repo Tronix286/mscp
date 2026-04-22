@@ -104,11 +104,17 @@ struct move {
         unsigned short prescore;
 };
 
+#ifdef PROFILE
+static struct move move_stack[512], *move_sp; /* History of moves */
+#else
 static struct move move_stack[1024], *move_sp; /* History of moves */
+#endif
 
 //static int piece_square_m[12][64];      /* Position evaluation tables */
 //static int *piece_square[12];           /* Pointers saves a multiplication by 128 */
+// ticks: 811135001
 
+// ticks: 783890011
 static int piece_square[12][64];        /* Position evaluation tables */
 static unsigned long zobrist[12][64];   /* Hash-key construction */
 
@@ -210,14 +216,14 @@ struct command {
 #define ATKB_WEST               6
 #define ATKB_NORTHWEST          7
 
-#define ATK_NORTH               (1 << ATKB_NORTH)
-#define ATK_NORTHEAST           (1 << ATKB_NORTHEAST)
-#define ATK_EAST                (1 << ATKB_EAST)
-#define ATK_SOUTHEAST           (1 << ATKB_SOUTHEAST)
-#define ATK_SOUTH               (1 << ATKB_SOUTH)
-#define ATK_SOUTHWEST           (1 << ATKB_SOUTHWEST)
-#define ATK_WEST                (1 << ATKB_WEST)
-#define ATK_NORTHWEST           (1 << ATKB_NORTHWEST)
+#define ATK_NORTH               (1U << ATKB_NORTH)
+#define ATK_NORTHEAST           (1U << ATKB_NORTHEAST)
+#define ATK_EAST                (1U << ATKB_EAST)
+#define ATK_SOUTHEAST           (1U << ATKB_SOUTHEAST)
+#define ATK_SOUTH               (1U << ATKB_SOUTH)
+#define ATK_SOUTHWEST           (1U << ATKB_SOUTHWEST)
+#define ATK_WEST                (1U << ATKB_WEST)
+#define ATK_NORTHWEST           (1U << ATKB_NORTHWEST)
 
 #define ATK_ORTHOGONAL          ( ATK_NORTH | ATK_SOUTH | \
                                   ATK_WEST  | ATK_EAST  )
@@ -501,27 +507,27 @@ static void compute_attacks(void)
                         break;
 
                 case WHITE_QUEEN:
-                        atk_slide(sq, (byte)ATK_SLIDER, &white);
+                        atk_slide(sq, ATK_SLIDER, &white);
                         break;
 
                 case BLACK_QUEEN:
-                        atk_slide(sq, (byte)ATK_SLIDER, &black);
+                        atk_slide(sq, ATK_SLIDER, &black);
                         break;
 
                 case WHITE_ROOK:
-                        atk_slide(sq, (byte)ATK_ORTHOGONAL, &white);
+                        atk_slide(sq, ATK_ORTHOGONAL, &white);
                         break;
 
                 case BLACK_ROOK:
-                        atk_slide(sq, (byte)ATK_ORTHOGONAL, &black);
+                        atk_slide(sq, ATK_ORTHOGONAL, &black);
                         break;
 
                 case WHITE_BISHOP:
-                        atk_slide(sq, (byte)ATK_DIAGONAL, &white);
+                        atk_slide(sq, ATK_DIAGONAL, &white);
                         break;
 
                 case BLACK_BISHOP:
-                        atk_slide(sq, (byte)ATK_DIAGONAL, &black);
+                        atk_slide(sq, ATK_DIAGONAL, &black);
                         break;
 
                 case WHITE_KNIGHT:
@@ -585,7 +591,7 @@ static void unmake_move(void)
         ply--;
 }
 
-static void make_move(int move)
+static void make_move(int move) __z88dk_fastcall
 {
         int fr;
         int to;
@@ -782,7 +788,7 @@ static int cmp_move(const void *ap, const void *bp)
         return a->move - b->move; /* this makes qsort deterministic */
 }
 
-static int test_illegal(int move)
+static int test_illegal(int move) __z88dk_fastcall
 {
         make_move(move);
         compute_attacks();
@@ -790,7 +796,7 @@ static int test_illegal(int move)
         return friend->attack[enemy->king] != 0;
 }
 
-static void generate_moves(unsigned treshold)
+static void generate_moves(unsigned treshold) __z88dk_fastcall
 {
         int             fr, to;
         int             pc;
@@ -822,7 +828,7 @@ static void generate_moves(unsigned treshold)
 
                 case WHITE_QUEEN:
                 case BLACK_QUEEN:
-                        gen_slides(fr, (byte)ATK_SLIDER);
+                        gen_slides(fr, ATK_SLIDER);
                         break;
 
                 case WHITE_ROOK:
@@ -832,7 +838,7 @@ static void generate_moves(unsigned treshold)
 
                 case WHITE_BISHOP:
                 case BLACK_BISHOP:
-                        gen_slides(fr, (byte)ATK_DIAGONAL);
+                        gen_slides(fr, ATK_DIAGONAL);
                         break;
 
                 case WHITE_KNIGHT:
@@ -1783,7 +1789,7 @@ static unsigned short squeeze(unsigned long n)
         return s | n;
 }
 
-static int root_search(int maxdepth)
+static int root_search(int maxdepth) __z88dk_fastcall
 {
         int             depth;
         int             score, best_score;
@@ -2148,6 +2154,17 @@ int main(void)
         castle[E8] = CASTLE_BLACK_KING | CASTLE_BLACK_QUEEN;
         castle[H8] = CASTLE_BLACK_KING;
 
+#ifdef PROFILE
+        setup_board("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -");
+        computer[0] = 0;
+        computer[1] = 1;
+        rnd_seed = get_r_register();
+	printf("rnd_seed = %lx\n",rnd_seed);
+        root_search(4);
+	printf("done!\n");
+	exit(0);
+#endif
+
         cmd_new(NULL);
 
         for (;;) { /* main loop */
@@ -2186,7 +2203,10 @@ int main(void)
                                         puts("1/2-1/2");
                                 }
                                 computer[0] = computer[1] = 0;
-				if (logfile) fclose(fp_log);
+				if (logfile) {					
+					fclose(fp_log);
+					printf("LOG closed\n");
+				}
                                 break;
                         }
                         printf("%d. ... ", 1+ply/2);
