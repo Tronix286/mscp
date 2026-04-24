@@ -85,7 +85,7 @@ static signed char undo_stack[3*512], *undo_sp; /* Move undo administration */
 static unsigned long hash_stack[1024]; /* History of hashes, for repetition */
 
 //was 4
-static int maxdepth = 2;                /* Maximum search depth */
+static uint8_t maxdepth = 2;                /* Maximum search depth */
 
 /* Constants for static move ordering (pre-scores) */
 #define PRESCORE_EQUAL       (10U<<9)
@@ -95,8 +95,8 @@ static int maxdepth = 2;                /* Maximum search depth */
 
 static const int prescore_piece_value[] = {
         0,
-        0, 9<<9, 5<<9, 3<<9, 3<<9, 1<<9,
-        0, 9<<9, 5<<9, 3<<9, 3<<9, 1<<9,
+        0, 9U<<9, 5U<<9, 3U<<9, 3U<<9, 1U<<9,
+        0, 9U<<9, 5U<<9, 3U<<9, 3U<<9, 1U<<9,
 };
 
 struct move {
@@ -198,7 +198,7 @@ enum { RANK_1, RANK_2, RANK_3, RANK_4, RANK_5, RANK_6, RANK_7, RANK_8 };
 #define MOVE(fr,to)             (((fr) << 6) | (to))    /* compose move */
 #define FR(move)                (((move) & 07700) >> 6) /* from square */
 #define TO(move)                ((move) & 00077)        /* target square */
-#define SPECIAL                 (1<<12)                 /* for special moves */
+#define SPECIAL                 (1U<<12)                 /* for special moves */
 
 struct command {
         char *name;
@@ -360,7 +360,8 @@ static int readline(char *line, int size, FILE *fp)
 static unsigned long compute_hash(void)
 {
         unsigned long hash = 0;
-        int sq;
+//        int sq;
+	uint8_t sq;
 
         for (sq=0; sq<64; sq++) {
                 if (board[sq] != EMPTY) {
@@ -448,7 +449,7 @@ static void setup_board(char *fen)
  |      attack tables                                                   |
  +----------------------------------------------------------------------*/
 
-static void atk_slide(int sq, byte dirs, struct side *s)
+static void atk_slide(uint8_t sq, byte dirs, struct side *s)
 {
         byte dir = 0;
         int to;
@@ -468,7 +469,10 @@ static void atk_slide(int sq, byte dirs, struct side *s)
 
 static void compute_attacks(void)
 {
-        int sq, to, pc;
+//        int sq, to, pc;
+  	int to;
+	uint8_t sq, pc;
+
         byte dir, dirs;
 
         memset(&white, 0, sizeof white);
@@ -697,14 +701,15 @@ static void make_move(int move) __z88dk_fastcall
    generation of good captures only */
 static unsigned short caps;
 
-static int push_move(int fr, int to)
+//static int push_move(int fr, int to)
+static int push_move(uint8_t fr, uint8_t to)
 {
         unsigned short prescore = PRESCORE_EQUAL;
         int move;
 
         /* what do we capture */
         if (board[to] != EMPTY) {
-                prescore += (1<<9) + prescore_piece_value[board[to]];
+                prescore += (1U<<9) + prescore_piece_value[board[to]];
         }
 
         /* does the destination square look safe? */
@@ -728,7 +733,8 @@ static int push_move(int fr, int to)
         return 0;
 }
 
-static void push_special_move(int fr, int to)
+//static void push_special_move(int fr, int to)
+static void push_special_move(uint8_t fr, uint8_t to)
 {
         int move;
 
@@ -738,7 +744,8 @@ static void push_special_move(int fr, int to)
         move_sp++;
 }
 
-static void push_pawn_move(int fr, int to)
+//static void push_pawn_move(int fr, int to)
+static void push_pawn_move(uint8_t fr, uint8_t to)
 {
         if ((R(to) == RANK_8) || (R(to) == RANK_1)) {
                 push_special_move(fr, to);          /* queen promotion */
@@ -753,10 +760,10 @@ static void push_pawn_move(int fr, int to)
         }
 }
 
-static void gen_slides(int fr, byte dirs)
+static void gen_slides(uint8_t fr, byte dirs)
 {
         int vector;
-        int to;
+        uint8_t to;
         byte dir = 0;
 
         dirs &= king_dirs[fr];
@@ -798,8 +805,10 @@ static int test_illegal(int move) __z88dk_fastcall
 
 static void generate_moves(unsigned treshold) __z88dk_fastcall
 {
-        int             fr, to;
-        int             pc;
+//        int             fr, to;
+	uint8_t fr, to;
+        //int             pc;
+	uint8_t pc;
         byte            dir, dirs;
 
         caps = treshold;
@@ -975,7 +984,8 @@ static void generate_moves(unsigned treshold) __z88dk_fastcall
 
 static void print_move_san(int move,byte f_log)
 {
-        int fr, to;
+        //int fr, to;
+	uint8_t fr, to;
         int filex = 0, rankx = 0;
         struct move *moves;
 	FILE * fp;
@@ -1406,7 +1416,8 @@ static int book_move(void)
  |      evaluator                                                       |
  +----------------------------------------------------------------------*/
 
-static int center[64] = {
+//static int center[64] = {
+static signed char center[64] = {
          0,  2,  3,  4,  4,  3,  2,  0,
          2,  3,  4,  5,  5,  4,  3,  2,
          3,  4,  5,  7,  7,  5,  4,  3,
@@ -1417,7 +1428,9 @@ static int center[64] = {
          0,  2,  3,  4,  4,  3,  2,  0,
 };
 
-static int pawn_advance[64] = {
+//static int pawn_advance[64] = {
+static signed char pawn_advance[64] = {
+
         0,  0, 2, 3, 5, 30, 50, 0,
         0,  0, 2, 3, 5, 30, 50, 0,
         0,  0, 2, 3, 5, 30, 50, 0,
@@ -1433,7 +1446,8 @@ static int pawn_advance[64] = {
 
 static void compute_piece_square_tables(void)
 {
-        int pc, sq;
+//        int pc, sq;
+        uint8_t pc, sq;
         int score = 0;
         int file;
 
@@ -1516,7 +1530,8 @@ static void compute_piece_square_tables(void)
         piece_square[BLACK_KING-1][G8] -= 100;
 }
 
-static int white_control[64] = {
+//static int white_control[64] = {
+static unsigned char white_control[64] = {
           1,  1,  1,  1,  2,  2,  2,  2,
           1,  1,  1,  1,  2,  2,  2,  2,
           1,  1,  2,  2,  3,  3,  2,  2,
@@ -1529,10 +1544,12 @@ static int white_control[64] = {
 
 static int evaluate(void)
 {
-        int sq;
+//        int sq;
+        uint8_t sq;
         int score = 0;
 
-        int white_has, black_has;
+//        int white_has, black_has;
+        uint8_t white_has, black_has;
 
         /*
          *  stage 1: material+piece_square tables
@@ -1630,7 +1647,7 @@ static int qsearch(int alpha, int beta)
         }
 
         moves = move_sp;
-        generate_moves(PRESCORE_EQUAL + (1<<9));
+        generate_moves(PRESCORE_EQUAL + (1U<<9));
         qsort(moves, move_sp - moves, sizeof(*moves), cmp_move);
         while (move_sp > moves) {
                 int move;
@@ -1667,7 +1684,7 @@ static int qsearch(int alpha, int beta)
         return best_score;
 }
 
-static int search(int depth, int alpha, int beta)
+static int search(uint8_t depth, int alpha, int beta)
 {
         int                             best_score = -INF;
         int                             best_move = 0;
@@ -1789,9 +1806,10 @@ static unsigned short squeeze(unsigned long n)
         return s | n;
 }
 
-static int root_search(int maxdepth) __z88dk_fastcall
+static int root_search(uint8_t maxdepth) __z88dk_fastcall
 {
-        int             depth;
+//        int             depth;
+        uint8_t         depth;
         int             score, best_score;
         int             move = 0;
         int             alpha, beta;
@@ -1997,7 +2015,7 @@ static void cmd_go(char *dummy)
 static void cmd_test(char *s)
 {
 //bdos(63, 0); // profile start
-        int d = maxdepth;
+        uint8_t d = maxdepth;
         sscanf(s, "%*s%d", &d);
         root_search(d);
 //bdos(64, 0); // profile end
@@ -2012,6 +2030,7 @@ static void cmd_set_depth(char *s)
 }
 
 
+#ifdef __Z80__
 uint32_t get_r_register(void) __z88dk_fastcall {
     #asm
         ld a, r
@@ -2022,7 +2041,7 @@ uint32_t get_r_register(void) __z88dk_fastcall {
 	mov e,a
     #endasm
 }
-
+#endif
 
 static void cmd_new(char *dummy)
 {
@@ -2030,8 +2049,8 @@ static void cmd_new(char *dummy)
         load_book("book.txt");
         computer[0] = 0;
         computer[1] = 1;
-        //rnd_seed = time(NULL);
         rnd_seed = get_r_register();
+        //rnd_seed = time(NULL);
 	printf("rnd_seed = %lx\n",rnd_seed);
 	if (logfile) {
 		cmd_log(NULL);
@@ -2129,23 +2148,23 @@ int main(void)
                 ( (byte*)zobrist )[i] = rnd() & 0xff;
         }
 
-        king_step[1<<0] = 1;
-        king_step[1<<1] = 9;
-        king_step[1<<2] = 8;
-        king_step[1<<3] = 7;
-        king_step[1<<4] = -1;
-        king_step[1<<5] = -9;
-        king_step[1<<6] = -8;
-        king_step[1<<7]= -7;
+        king_step[1U<<0] = 1;
+        king_step[1U<<1] = 9;
+        king_step[1U<<2] = 8;
+        king_step[1U<<3] = 7;
+        king_step[1U<<4] = -1;
+        king_step[1U<<5] = -9;
+        king_step[1U<<6] = -8;
+        king_step[1U<<7]= -7;
 
-        knight_jump[1<<0] = -6;
-        knight_jump[1<<1] = 10;
-        knight_jump[1<<2] = 17;
-        knight_jump[1<<3] = 15;
-        knight_jump[1<<4] = -10;
-        knight_jump[1<<5] = 6;
-        knight_jump[1<<6] = -15;
-        knight_jump[1<<7] = -17;
+        knight_jump[1U<<0] = -6;
+        knight_jump[1U<<1] = 10;
+        knight_jump[1U<<2] = 17;
+        knight_jump[1U<<3] = 15;
+        knight_jump[1U<<4] = -10;
+        knight_jump[1U<<5] = 6;
+        knight_jump[1U<<6] = -15;
+        knight_jump[1U<<7] = -17;
 
         castle[A1] = CASTLE_WHITE_QUEEN;
         castle[E1] = CASTLE_WHITE_KING | CASTLE_WHITE_QUEEN;
@@ -2158,7 +2177,8 @@ int main(void)
         setup_board("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -");
         computer[0] = 0;
         computer[1] = 1;
-        rnd_seed = get_r_register();
+        //rnd_seed = get_r_register();
+        rnd_seed = 0x4f4f4b4b;
 	printf("rnd_seed = %lx\n",rnd_seed);
         root_search(4);
 	printf("done!\n");
