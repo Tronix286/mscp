@@ -1,4 +1,6 @@
 #pragma output noprotectmsdos
+#pragma scanf  = "%s %d"  // enables %s,%d only
+#pragma printf = "%s %c %d %5lu %lx"     // enables %s, %c, %u, %f only
 /*----------------------------------------------------------------------+
  |                                                                      |
  |              mscp.c - Marcel's Simple Chess Program                  |
@@ -452,7 +454,8 @@ static void setup_board(char *fen)
 static void atk_slide(uint8_t sq, byte dirs, struct side *s)
 {
         byte dir = 0;
-        int to;
+        //int to;
+	uint8_t to;	//WARNING !!!
 
         dirs &= king_dirs[sq];
         do {
@@ -470,7 +473,8 @@ static void atk_slide(uint8_t sq, byte dirs, struct side *s)
 static void compute_attacks(void)
 {
 //        int sq, to, pc;
-  	int to;
+//  	int to;
+	uint8_t to;	//WARNING !!!
 	uint8_t sq, pc;
 
         byte dir, dirs;
@@ -597,9 +601,11 @@ static void unmake_move(void)
 
 static void make_move(int move) __z88dk_fastcall
 {
-        int fr;
-        int to;
+//        int fr;
+//        int to;
         int sq;
+        uint8_t fr;
+        uint8_t to;
 
         *undo_sp++ = -1;                        /* Place sentinel */
 
